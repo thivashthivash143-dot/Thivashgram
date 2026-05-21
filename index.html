@@ -161,103 +161,188 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // Your Exact Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCR3xMj0rcdC1jRQyGePjtO9rpd8k5Om3E",
-            authDomain: "thivashgram.firebaseapp.com",
-            projectId: "thivashgram",
-            storageBucket: "thivashgram.firebasestorage.app",
-            messagingSenderId: "515740477126",
-            appId: "1:515740477126:web:44605f2b80c50d86d799c7",
-            measurementId: "G-LE2M9GDKCT"
-        };
+/* Firebase Config
+   Firebase → Project Settings → SDK configல இருக்குற exact values வை
+*/
+const firebaseConfig = {
+  apiKey: "PASTE_NEW_API_KEY",
+  authDomain: "thivashgram.firebaseapp.com",
+  projectId: "thivashgram",
+  storageBucket: "thivashgram.appspot.com",
+  messagingSenderId: "PASTE_ID",
+  appId: "PASTE_APP_ID"
+};
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-        // State tracker: false = Login Mode, true = Register Mode
-        let isRegisterMode = false;
+let isRegisterMode = false;
 
-        // Global functions binding so HTML buttons can use them
-        window.toggleMode = function(registerMode) {
-            isRegisterMode = registerMode;
-            const errorBox = document.getElementById('error-box');
-            const usernameGroup = document.getElementById('username-group');
-            const submitBtn = document.getElementById('submit-btn');
-            const subtitle = document.getElementById('form-subtitle');
-            const footer = document.getElementById('toggle-footer');
-            const usernameInput = document.getElementById('username');
+const errorBox = document.getElementById("error-box");
+const usernameGroup = document.getElementById("username-group");
+const usernameInput = document.getElementById("username");
+const submitBtn = document.getElementById("submit-btn");
+const subtitle = document.getElementById("form-subtitle");
+const footer = document.getElementById("toggle-footer");
 
-            errorBox.style.display = 'none';
+function showError(text) {
+  errorBox.innerText = text;
+  errorBox.style.display = "block";
+}
 
-            if (isRegisterMode) {
-                subtitle.innerText = "Create an account to get started.";
-                usernameGroup.style.display = 'block';
-                usernameInput.required = true;
-                submitBtn.innerText = "Sign Up";
-                footer.innerHTML = `Already have an account? <a onclick="toggleMode(false)">Log In</a>`;
-            } else {
-                subtitle.innerText = "Sign in to continue sharing your moments.";
-                usernameGroup.style.display = 'none';
-                usernameInput.required = false;
-                submitBtn.innerText = "Log In";
-                footer.innerHTML = `Don't have an account? <a onclick="thoughtToggleMode(true)">Create new account</a>`;
-            }
+function hideError() {
+  errorBox.style.display = "none";
+}
+
+window.toggleMode = function(mode) {
+  isRegisterMode = mode;
+
+  hideError();
+
+  if (mode) {
+    usernameGroup.style.display = "block";
+    usernameInput.required = true;
+
+    submitBtn.innerText = "Sign Up";
+
+    subtitle.innerText =
+      "Create an account to get started.";
+
+    footer.innerHTML =
+      `Already have an account?
+      <a onclick="toggleMode(false)">Log In</a>`;
+
+  } else {
+
+    usernameGroup.style.display = "none";
+    usernameInput.required = false;
+
+    submitBtn.innerText = "Log In";
+
+    subtitle.innerText =
+      "Sign in to continue sharing your moments.";
+
+    footer.innerHTML =
+      `Don't have an account?
+      <a onclick="toggleMode(true)">
+      Create new account
+      </a>`;
+  }
+};
+
+window.handleAuth = async function(e) {
+
+  e.preventDefault();
+
+  hideError();
+
+  const email =
+    document.getElementById("email")
+      .value
+      .trim();
+
+  const password =
+    document.getElementById("password")
+      .value;
+
+  const username =
+    usernameInput.value.trim();
+
+  try {
+
+    if (isRegisterMode) {
+
+      if (!username) {
+        showError("Enter username");
+        return;
+      }
+
+      const result =
+        await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+      await updateProfile(
+        result.user,
+        {
+          displayName: username
         }
-        // Workaround for innerHTML template string binding
-        window.thoughtToggleMode = window.toggleMode;
+      );
 
-        // Authentication Submission Handler
-        window.handleAuth = function(event) {
-            event.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const username = document.getElementById('username').value;
-            const errorBox = document.getElementById('error-box');
+      location.href =
+        "./feed.html";
 
-            errorBox.style.display = 'none';
+    } else {
 
-            if (isRegisterMode) {
-                // Handle Firebase Sign Up
-                createUserWithEmailAndPassword(auth, email, password)
-                    .then((userCredential) => {
-                        const user = userCredential.user;
-                        // Save the user's custom username inside Firebase Auth Profile
-                        updateProfile(user, {
-                            displayName: username
-                        }).then(() => {
-                            // Successfully registered and redirected to Feed Page
-                            window.location.href = "feed.html";
-                        });
-                    })
-                    .catch((error) => {
-                        errorBox.innerText = error.message.replace("Firebase: ", "");
-                        errorBox.style.display = 'block';
-                    });
-            } else {
-                // Handle Firebase Login
-                signInWithEmailAndPassword(auth, email, password)
-                    .then((userCredential) => {
-                        // Successfully authenticated and redirected to Feed Page
-                        window.location.href = "feed.html";
-                    })
-                    .catch((error) => {
-                        errorBox.innerText = "Invalid credentials. Please try again.";
-                        errorBox.style.display = 'block';
-                    });
-            }
-        }
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-        // Security Guard: If user is already logged in, automatically push them to Feed Page
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                window.location.href = "feed.html";
-            }
-        });
+      location.href =
+        "./feed.html";
+    }
+
+  } catch (err) {
+
+    let msg =
+      "Something went wrong";
+
+    if (
+      err.code ===
+      "auth/invalid-credential"
+    ) {
+      msg =
+        "Email or password wrong";
+    }
+
+    if (
+      err.code ===
+      "auth/email-already-in-use"
+    ) {
+      msg =
+        "Account already exists";
+    }
+
+    if (
+      err.code ===
+      "auth/weak-password"
+    ) {
+      msg =
+        "Password too short";
+    }
+
+    showError(msg);
+  }
+};
+
+onAuthStateChanged(
+  auth,
+  (user) => {
+
+    if (
+      user &&
+      !location.pathname
+        .includes("feed.html")
+    ) {
+      location.href =
+        "./feed.html";
+    }
+
+  }
+);
     </script>
 </body>
 </html>
